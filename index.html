@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Postcode Lookup Test</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    max-width: 600px;
+    margin: 50px auto;
+}
+
+input{
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    margin-bottom: 15px;
+}
+
+button{
+    padding: 10px 15px;
+}
+
+.debug{
+    background:#f4f4f4;
+    padding:10px;
+    margin-top:20px;
+    font-family: monospace;
+}
+</style>
+
+</head>
+<body>
+
+<h2>Postcode API Test</h2>
+
+<label>Postcode</label>
+<input id="postcode" placeholder="1234AB">
+
+<label>Huisnummer</label>
+<input id="huisnummer" placeholder="10">
+
+<button onclick="lookup()">Lookup adres</button>
+
+<label>Straat</label>
+<input id="straat">
+
+<label>Plaats</label>
+<input id="plaats">
+
+<div class="debug" id="debug"></div>
+
+<script>
+
+const API_KEY = "H1Meb05FXFaLdcdeysMLV1njuHTArlBh5xcQB28U";
+
+async function lookup(){
+
+    const postcode = document.getElementById("postcode").value.replace(/\s/g,'').toUpperCase();
+    const huisnummer = document.getElementById("huisnummer").value;
+
+    const url = `https://api.postcodeapi.nu/v3/lookup/${postcode}/${huisnummer}`;
+
+    document.getElementById("debug").innerText = "Request: " + url;
+
+    try {
+
+        const response = await fetch(url,{
+            headers:{
+                "X-Api-Key": API_KEY
+            }
+        });
+
+        const data = await response.json();
+
+        document.getElementById("debug").innerText =
+            "Response:\n" + JSON.stringify(data,null,2);
+
+        if(data.data && data.data.length > 0){
+
+            const address = data.data[0];
+
+            document.getElementById("straat").value = address.street;
+            document.getElementById("plaats").value = address.city;
+
+        }
+        else{
+            alert("Address not found");
+        }
+
+    }
+    catch(e){
+        console.error(e);
+        alert("Lookup failed");
+    }
+
+}
+
+</script>
+
+</body>
+</html>
