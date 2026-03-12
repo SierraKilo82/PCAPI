@@ -1,47 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 <meta charset="UTF-8">
-<title>Postcode Lookup Test</title>
+<title>Postcode API Test</title>
 
 <style>
+
 body{
-    font-family: Arial, sans-serif;
-    max-width: 600px;
-    margin: 50px auto;
+    font-family: Arial;
+    background:#f4f6f9;
+    padding:40px;
+}
+
+.container{
+    background:white;
+    max-width:600px;
+    padding:30px;
+    border-radius:8px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+
+h2{
+    margin-top:0;
+}
+
+label{
+    font-weight:bold;
 }
 
 input{
-    width: 100%;
-    padding: 8px;
-    margin-top: 5px;
-    margin-bottom: 15px;
+    width:100%;
+    padding:10px;
+    margin-top:5px;
+    margin-bottom:15px;
+    border:1px solid #ccc;
+    border-radius:4px;
 }
 
 button{
-    padding: 10px 15px;
+    padding:10px 15px;
+    background:#0077cc;
+    color:white;
+    border:none;
+    border-radius:4px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#005fa3;
+}
+
+.loader{
+    display:none;
+    margin-bottom:10px;
+    color:#0077cc;
 }
 
 .debug{
-    background:#f4f4f4;
+    background:#f1f1f1;
     padding:10px;
     margin-top:20px;
-    font-family: monospace;
+    font-family:monospace;
+    font-size:12px;
+    max-height:200px;
+    overflow:auto;
 }
-</style>
 
+</style>
 </head>
+
 <body>
 
-<h2>Postcode API Test</h2>
+<div class="container">
+
+<h2>Postcode Lookup Test</h2>
 
 <label>Postcode</label>
-<input id="postcode" placeholder="1234AB">
+<input id="postcode" placeholder="1234 AB">
 
 <label>Huisnummer</label>
 <input id="huisnummer" placeholder="10">
 
 <button onclick="lookup()">Lookup adres</button>
+
+<div class="loader" id="loader">
+Lookup bezig...
+</div>
 
 <label>Straat</label>
 <input id="straat">
@@ -49,51 +94,83 @@ button{
 <label>Plaats</label>
 <input id="plaats">
 
-<div class="debug" id="debug"></div>
+<div class="debug" id="debug">
+Debug output verschijnt hier
+</div>
+
+</div>
 
 <script>
 
-const API_KEY = "H1Meb05FXFaLdcdeysMLV1njuHTArlBh5xcQB28U";
+const API_KEY = "PLAATS_HIER_JE_API_KEY";
+
+const postcodeField = document.getElementById("postcode");
+const huisnummerField = document.getElementById("huisnummer");
+
+postcodeField.addEventListener("input", formatPostcode);
+huisnummerField.addEventListener("blur", autoLookup);
+
+function formatPostcode(){
+
+ let value = postcodeField.value.replace(/\s/g,'').toUpperCase();
+
+ if(value.length > 4){
+     value = value.substring(0,4) + " " + value.substring(4,6);
+ }
+
+ postcodeField.value = value;
+
+}
+
+function autoLookup(){
+
+ if(postcodeField.value.length >= 6 && huisnummerField.value){
+     lookup();
+ }
+
+}
 
 async function lookup(){
 
-    const postcode = document.getElementById("postcode").value.replace(/\s/g,'').toUpperCase();
-    const huisnummer = document.getElementById("huisnummer").value;
+ const postcode = postcodeField.value.replace(/\s/g,'').toUpperCase();
+ const huisnummer = huisnummerField.value;
 
-    const url = `https://api.postcodeapi.nu/v3/lookup/${postcode}/${huisnummer}`;
+ const url = `https://api.postcodeapi.nu/v3/lookup/${postcode}/${huisnummer}`;
 
-    document.getElementById("debug").innerText = "Request: " + url;
+ document.getElementById("loader").style.display = "block";
+ document.getElementById("debug").innerText = "Request:\n" + url;
 
-    try {
+ try{
 
-        const response = await fetch(url,{
-            headers:{
-                "X-Api-Key": API_KEY
-            }
-        });
+     const response = await fetch(url,{
+         headers:{
+             "X-Api-Key": API_KEY
+         }
+     });
 
-        const data = await response.json();
+     const text = await response.text();
 
-        document.getElementById("debug").innerText =
-            "Response:\n" + JSON.stringify(data,null,2);
+     document.getElementById("debug").innerText =
+         "Status: " + response.status + "\n\nResponse:\n" + text;
 
-        if(data.data && data.data.length > 0){
+     if(!response.ok){
+         throw new Error("API error");
+     }
 
-            const address = data.data[0];
+     const data = JSON.parse(text);
 
-            document.getElementById("straat").value = address.street;
-            document.getElementById("plaats").value = address.city;
+     document.getElementById("straat").value = data.street;
+     document.getElementById("plaats").value = data.city;
 
-        }
-        else{
-            alert("Address not found");
-        }
+ }
+ catch(e){
 
-    }
-    catch(e){
-        console.error(e);
-        alert("Lookup failed");
-    }
+     console.error(e);
+     alert("Lookup failed");
+
+ }
+
+ document.getElementById("loader").style.display = "none";
 
 }
 
